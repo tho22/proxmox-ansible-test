@@ -1,0 +1,121 @@
+---
+- name: Cloud-Init Template auf Proxmox erstellen
+  hosts: proxmox
+  gather_facts: false
+
+  vars_files:
+    - ../vars/template.yml
+
+  tasks:
+    - name: Prüfen ob Template bereits existiert
+      ansible.builtin.command:
+        cmd: "qm status {{ template_vmid }}"
+      register: template_status
+      changed_when: false
+      failed_when: false
+
+    - name: Abbrechen wenn Template bereits vorhanden
+      ansible.builtin.meta: end_play
+      when: template_status.rc == 0
+
+    # --- Cloud-Image herunterladen ---
+
+    - name: Zielverzeichnis sicherstellen
+      ansible.builtin.file:
+        path: "{{ template_image_storage }}"
+        state: directory
+        mode: "0755"
+
+    - name: Cloud-Image herunterladen
+      ansible.builtin.get_url:
+        url: "{{ template_image_url }}"
+        dest: "{{ template_image_storage }}/{{ template_image_name }}"
+        mode: "0644"
+      register: image_download
+
+    # --- SSH Public Key einlesen ---
+
+    - name: SSH Public Key vom Control-Node lesen
+      ansible.builtin.set_fact:
+        ssh_public_key: "{{ lookup('file', template_ssh_key_file) }}"
+      delegate_to: localhost
+
+    # --- VM erstellen ---
+
+    - name: VM erstellen (Basis)
+      ansible.builtin.command:
+        cmd: >
+          qm create {{ template_vmid }}
+          --name {{ template_name }}
+          --cores {{ template_cores }}
+          --memory {{ template_memory }}
+          --net0 virtio,bridge={{ template_net_bridge }}
+          --serial0 socket
+          --vga serial0
+          --agent enabled=1
+          --ostype l26
+          --boot order=scsi0
+      changed_when: true
+
+    - name: Disk-Image in Proxmox Storage importieren
+      ansible.builtin.command:
+        cmd: >
+          qm importdisk {{ template_vmid }}
+          {{ template_image_storage }}/{{ template_image_name }}
+          {{ template_storage }}
+      register: import_result
+      changed_when: true
+
+    - name: Importierten Disk als scsi0 einbinden
+      ansible.builtin.command:
+        cmd: "qm set {{ template_vmid }} --scsi0 {{ template_storage }}:vm-{{ template_vmid }}-disk-0"
+      changed_when: true
+
+    - name: Disk-Größe anpassen
+      ansible.builtin.command:
+        cmd: "qm resize {{ template_vmid }} scsi0 {{ template_disk_size }}"
+      changed_when: true
+
+    # --- Cloud-Init konfigurieren ---
+
+    - name: Cloud-Init Drive hinzufügen
+      ansible.builtin.command:
+        cmd: "qm set {{ template_vmid }} --ide2 {{ template_storage }}:cloudinit"
+      changed_when: true
+
+    - name: Standard-Benutzer setzen
+      ansible.builtin.command:
+        cmd: "qm set {{ template_vmid }} --ciuser {{ template_default_user }}"
+      changed_when: true
+
+    - name: Authorized-Keys-Datei auf Proxmox schreiben
+      ansible.builtin.copy:
+        content: "{{ ssh_public_key }}\n"
+        dest: "{{ template_image_storage }}/authorized_keys_{{ template_vmid }}"
+        mode: "0600"
+
+    - name: SSH Key in VM-Konfiguration eintragen
+      ansible.builtin.command:
+        cmd: "qm set {{ template_vmid }} --sshkeys {{ template_image_storage }}/authorized_keys_{{ template_vmid }}"
+      changed_when: true
+
+    - name: DHCP als Standard-IP-Konfiguration setzen
+      ansible.builtin.command:
+        cmd: "qm set {{ template_vmid }} --ipconfig0 ip=dhcp"
+      changed_when: true
+
+    # --- In Template umwandeln ---
+
+    - name: VM in Template konvertieren
+      ansible.builtin.command:
+        cmd: "qm template {{ template_vmid }}"
+      changed_when: true
+
+    - name: Temporäre Authorized-Keys-Datei aufräumen
+      ansible.builtin.file:
+        path: "{{ template_image_storage }}/authorized_keys_{{ template_vmid }}"
+        state: absent
+
+    - name: Fertig
+      ansible.builtin.debug:
+        msg: "Template '{{ template_name }}' (VMID: {{ template_vmid }}) erfolgreich erstellt."

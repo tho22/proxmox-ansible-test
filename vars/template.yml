@@ -1,0 +1,25 @@
+# Cloud-Init Template Konfiguration
+template_vmid: 9000
+template_name: "ubuntu-2404-cloudinit"
+template_storage: "local-lvm"   # Storage für den importierten Disk
+template_image_storage: "/var/lib/vz/template/iso"  # Temporärer Speicherort auf Proxmox
+
+# Cloud-Image URL (auswählen oder anpassen)
+# Ubuntu 24.04 LTS
+template_image_url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+template_image_name: "noble-server-cloudimg-amd64.img"
+
+# Alternativ:
+# Debian 12
+# template_image_url: "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
+# template_image_name: "debian-12-genericcloud-amd64.qcow2"
+
+# VM Hardware-Grundkonfiguration
+template_cores: 2
+template_memory: 2048
+template_disk_size: "8G"
+template_net_bridge: "vmbr0"
+
+# Cloud-Init Standard-Einstellungen (werden pro VM überschrieben)
+template_default_user: "ansible"
+template_ssh_key_file: "~/.ssh/id_rsa.pub"  # Lokaler Pfad zum Public Key
