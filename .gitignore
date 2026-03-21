@@ -1,0 +1,5 @@
+.collections/
+*.retry
+*.vault_pass
+vault_password_file
+group_vars/all/vault.yml

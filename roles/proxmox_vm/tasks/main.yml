@@ -1,0 +1,71 @@
+---
+- name: "VM {{ vm.name }} ({{ vm.vmid }}) aus Template klonen"
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_port: "{{ proxmox_port }}"
+    api_user: "{{ proxmox_user }}"
+    api_password: "{{ proxmox_password }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    name: "{{ vm.name }}"
+    vmid: "{{ vm.vmid }}"
+    clone: "{{ vm.template }}"
+    full: true
+    state: present
+  when: vm.template is defined
+
+- name: "VM {{ vm.name }} konfigurieren"
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_port: "{{ proxmox_port }}"
+    api_user: "{{ proxmox_user }}"
+    api_password: "{{ proxmox_password }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    name: "{{ vm.name }}"
+    vmid: "{{ vm.vmid }}"
+    cores: "{{ vm.cores | default(vm_cores) }}"
+    memory: "{{ vm.memory | default(vm_memory) }}"
+    agent: "enabled={{ vm_agent | ternary('1', '0') }}"
+    onboot: "{{ vm.onboot | default(vm_onboot) }}"
+    tags: "{{ vm.tags | default('') }}"
+    update: true
+    state: present
+
+- name: "Disk-Größe anpassen für {{ vm.name }}"
+  community.general.proxmox_disk:
+    api_host: "{{ proxmox_host }}"
+    api_port: "{{ proxmox_port }}"
+    api_user: "{{ proxmox_user }}"
+    api_password: "{{ proxmox_password }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    vmid: "{{ vm.vmid }}"
+    disk: scsi0
+    size: "{{ vm.disk_size | default(vm_disk_size) }}"
+    state: resized
+
+- name: "Cloud-Init IP-Konfiguration setzen für {{ vm.name }}"
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_port: "{{ proxmox_port }}"
+    api_user: "{{ proxmox_user }}"
+    api_password: "{{ proxmox_password }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ vm.vmid }}"
+    ipconfig:
+      ipconfig0: "ip={{ vm.ip }},gw={{ vm.gateway }}"
+    update: true
+    state: present
+  when: vm.ip is defined
+
+- name: "VM {{ vm.name }} starten"
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_port: "{{ proxmox_port }}"
+    api_user: "{{ proxmox_user }}"
+    api_password: "{{ proxmox_password }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ vm.vmid }}"
+    state: started

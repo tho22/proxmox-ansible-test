@@ -1,0 +1,17 @@
+---
+- name: Virtuelle Maschinen auf Proxmox erstellen
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - ../vars/vms.yml
+
+  tasks:
+    - name: VMs erstellen und konfigurieren
+      ansible.builtin.include_role:
+        name: proxmox_vm
+      vars:
+        vm: "{{ item }}"
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.name }} (VMID: {{ item.vmid }})"

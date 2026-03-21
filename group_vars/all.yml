@@ -1,0 +1,11 @@
+# Proxmox API Zugangsdaten
+# Empfehlung: Werte in einer vault-verschlüsselten Datei speichern (group_vars/all/vault.yml)
+proxmox_host: "192.168.1.10"       # Proxmox Host IP oder Hostname
+proxmox_port: 8006
+proxmox_user: "ansible@pam"        # API-Benutzer
+proxmox_password: "changeme"       # Passwort oder Token Secret
+# Alternativ API-Token (empfohlen):
+# proxmox_token_id: "ansible@pam!mytoken"
+# proxmox_token_secret: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+proxmox_node: "pve"                # Proxmox Node-Name
+proxmox_validate_certs: false      # true wenn gültiges SSL-Zertifikat vorhanden

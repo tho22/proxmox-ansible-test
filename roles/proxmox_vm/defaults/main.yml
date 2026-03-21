@@ -1,0 +1,11 @@
+# Standard-Werte für neue VMs (können pro VM überschrieben werden)
+vm_cores: 2
+vm_memory: 2048          # in MB
+vm_disk_size: "20G"
+vm_disk_storage: "local-lvm"
+vm_net_bridge: "vmbr0"
+vm_os_type: "l26"        # Linux 2.6+ Kernel
+vm_boot_order: "order=scsi0"
+vm_agent: true           # QEMU Guest Agent aktivieren
+vm_onboot: true          # VM bei Proxmox-Start automatisch starten
+vm_state: present        # present = erstellen, absent = löschen

@@ -1,0 +1,22 @@
+# VM-Definitionen
+# Jede VM kann die defaults aus der Rolle überschreiben
+vms:
+  - name: "vm-web-01"
+    vmid: 201
+    cores: 2
+    memory: 2048
+    disk_size: "20G"
+    ip: "192.168.1.201/24"
+    gateway: "192.168.1.1"
+    template: 9000               # Template-VMID (clone-Basis)
+    tags: "web,production"
+
+  - name: "vm-db-01"
+    vmid: 202
+    cores: 4
+    memory: 4096
+    disk_size: "50G"
+    ip: "192.168.1.202/24"
+    gateway: "192.168.1.1"
+    template: 9000
+    tags: "database,production"

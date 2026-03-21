@@ -1,0 +1,23 @@
+---
+- name: Virtuelle Maschinen auf Proxmox löschen
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - ../vars/vms.yml
+
+  tasks:
+    - name: VMs stoppen und löschen
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_port: "{{ proxmox_port }}"
+        api_user: "{{ proxmox_user }}"
+        api_password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        node: "{{ proxmox_node }}"
+        vmid: "{{ item.vmid }}"
+        state: absent
+        force: true
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.name }} (VMID: {{ item.vmid }})"
